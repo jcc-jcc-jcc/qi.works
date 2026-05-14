@@ -14,13 +14,11 @@
             font-display: swap;
         }
 
-        /* 2. GLOBAL RESET & CURSOR HIDE */
+        /* 2. BASE STYLES */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            /* Hard-hide the standard system cursor on every element */
-            cursor: none !important; 
         }
 
         html, body {
@@ -38,27 +36,43 @@
             align-items: center;
         }
 
-        /* 3. THE CUSTOM CURSOR (Italic Frame) */
-        #custom-cursor {
-            width: 14px;
-            height: 14px;
-            border: 1px solid #000000;
-            background-color: transparent;
-            
-            position: fixed;
-            top: 0;
-            left: 0;
-            pointer-events: none; /* Clicks pass through to the text */
-            z-index: 9999;
-            
-            /* Centered and skewed to match the italic font angle */
-            transform: translate(-50%, -50%) skewX(-15deg);
-            
-            transition: border-color 0.3s ease, transform 0.2s ease, opacity 0.5s ease;
-            opacity: 0; /* Hidden until the mouse moves */
+        /* 3. DESKTOP ONLY: CUSTOM CURSOR & HIDE SYSTEM ARROW */
+        /* This block only runs if a mouse/trackpad is detected */
+        @media (pointer: fine) {
+            * {
+                cursor: none !important; 
+            }
+
+            #custom-cursor {
+                display: block; /* Show the frame on desktop */
+                width: 14px;
+                height: 14px;
+                border: 1px solid #000000;
+                background-color: transparent;
+                position: fixed;
+                top: 0;
+                left: 0;
+                pointer-events: none;
+                z-index: 9999;
+                transform: translate(-50%, -50%) skewX(-15deg);
+                transition: border-color 0.3s ease, transform 0.2s ease, opacity 0.5s ease;
+                opacity: 0;
+            }
+
+            body.active-interaction #custom-cursor {
+                border-color: #C65102;
+                transform: translate(-50%, -50%) skewX(-15deg) scale(1.5);
+            }
         }
 
-        /* 4. THE MAIN TEXT */
+        /* 4. MOBILE/TABLET ONLY: HIDE THE CUSTOM CURSOR */
+        @media (pointer: coarse) {
+            #custom-cursor {
+                display: none !important;
+            }
+        }
+
+        /* 5. THE MAIN TEXT */
         h1 {
             font-size: 13px;
             font-weight: bold;
@@ -66,27 +80,16 @@
             letter-spacing: 0.1em;
             text-transform: lowercase;
             position: absolute;
-            user-select: none; /* Prevents blue highlight during drag */
+            user-select: none;
             color: #000000;
-            
             transition: color 0.3s ease;
             opacity: 0;
             animation: fadeIn 2.5s ease-in forwards;
         }
 
-        /* 5. INTERACTION STATES */
-        h1:hover {
-            color: #C65102;
-        }
-
-        /* State when dragging or hovering */
+        /* Color change on hover/interaction */
         body.active-interaction h1 {
             color: #C65102;
-        }
-
-        body.active-interaction #custom-cursor {
-            border-color: #C65102;
-            transform: translate(-50%, -50%) skewX(-15deg) scale(1.5);
         }
 
         @keyframes fadeIn {
@@ -113,18 +116,15 @@
                 hasMoved = true;
             }
             
-            // Move the custom cursor
             cursor.style.left = e.clientX + "px";
             cursor.style.top = e.clientY + "px";
             
-            // Move the text if dragging
             if (isDragging) {
                 text.style.left = (e.clientX - offset.x) + "px";
                 text.style.top = (e.clientY - offset.y) + "px";
             }
         });
 
-        // Toggle visual interaction state
         text.addEventListener("mouseenter", () => document.body.classList.add('active-interaction'));
         text.addEventListener("mouseleave", () => {
             if (!isDragging) document.body.classList.remove('active-interaction');
@@ -133,26 +133,21 @@
         text.addEventListener("mousedown", (e) => {
             isDragging = true;
             document.body.classList.add('active-interaction');
-            
             offset.x = e.clientX - text.offsetLeft;
             offset.y = e.clientY - text.offsetTop;
-            
-            // Break from flex-centering
             text.style.margin = "0"; 
             text.style.transform = "none";
         });
 
         document.addEventListener("mouseup", (e) => {
             isDragging = false;
-            
-            // Keep orange only if we are still actually hovering over the text
             const elementUnder = document.elementFromPoint(e.clientX, e.clientY);
             if (elementUnder !== text) {
                 document.body.classList.remove('active-interaction');
             }
         });
 
-        // --- TOUCH LOGIC (Mobile) ---
+        // --- TOUCH LOGIC (Stays active for dragging functionality) ---
         text.addEventListener("touchstart", (e) => {
             isDragging = true;
             const touch = e.touches[0];
@@ -166,6 +161,8 @@
             const touch = e.touches[0];
             text.style.left = (touch.clientX - offset.x) + "px";
             text.style.top = (touch.clientY - offset.y) + "px";
+            text.style.margin = "0"; 
+            text.style.transform = "none";
         }, { passive: false });
 
         document.addEventListener("touchend", () => {

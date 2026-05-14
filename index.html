@@ -13,20 +13,23 @@
             font-display: swap;
         }
 
+        /* This hides the system cursor on everything, including links and text */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            /* Hides the default system cursor everywhere on the page */
             cursor: none !important; 
         }
 
-        body {
+        html, body {
             background-color: #ffffff;
-            color: #000000;
             height: 100vh;
             width: 100vw;
             overflow: hidden;
+            background-color: #ffffff;
+        }
+
+        body {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -34,7 +37,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* The Custom Ball Cursor */
+        /* The Custom Ball */
         #custom-cursor {
             width: 10px;
             height: 10px;
@@ -43,10 +46,10 @@
             position: fixed;
             top: 0;
             left: 0;
-            pointer-events: none; /* Allows clicks to pass through the ball to the text */
+            pointer-events: none; /* CRITICAL: Allows clicks to "pass through" the ball */
             z-index: 9999;
-            transition: transform 0.1s ease, background-color 0.3s ease;
-            transform: translate(-50%, -50%); /* Centers the ball on the mouse tip */
+            transform: translate(-50%, -50%);
+            transition: background-color 0.3s ease, transform 0.2s ease;
         }
 
         h1 {
@@ -63,14 +66,14 @@
             animation: fadeIn 2.5s ease-in forwards;
         }
 
-        /* Hover & Dragging states */
+        /* Interaction states */
         h1:hover { color: #C65102; }
         h1.dragging { color: #C65102 !important; }
 
-        /* Make the ball turn orange when interacting */
+        /* Ball turns orange and grows slightly when hovering/dragging */
         body.active-cursor #custom-cursor {
             background-color: #C65102;
-            transform: translate(-50%, -50%) scale(1.5); /* Makes the ball slightly larger */
+            transform: translate(-50%, -50%) scale(1.4);
         }
 
         @keyframes fadeIn {
@@ -89,7 +92,7 @@
         let isDragging = false;
         let offset = { x: 0, y: 0 };
 
-        // 1. Follow Mouse Movement
+        // 1. Cursor Following
         document.addEventListener("mousemove", (e) => {
             cursor.style.left = e.clientX + "px";
             cursor.style.top = e.clientY + "px";
@@ -100,7 +103,7 @@
             }
         });
 
-        // 2. Interaction (Colors & Scaling)
+        // 2. Hover Interactions
         text.addEventListener("mouseenter", () => document.body.classList.add('active-cursor'));
         text.addEventListener("mouseleave", () => {
             if (!isDragging) document.body.classList.remove('active-cursor');
@@ -115,7 +118,6 @@
             offset.x = e.clientX - text.offsetLeft;
             offset.y = e.clientY - text.offsetTop;
             
-            // Remove initial centering
             text.style.margin = "0"; 
             text.style.transform = "none";
         });
@@ -123,10 +125,18 @@
         document.addEventListener("mouseup", () => {
             isDragging = false;
             text.classList.remove('dragging');
-            document.body.classList.remove('active-cursor');
+            
+            // Check if we are still hovering after release
+            const hoverElement = document.elementFromPoint(
+                parseInt(cursor.style.left), 
+                parseInt(cursor.style.top)
+            );
+            if (hoverElement !== text) {
+                document.body.classList.remove('active-cursor');
+            }
         });
 
-        // 4. Mobile/Touch Support (Cursor is hidden on touch devices usually)
+        // 4. Basic Touch Support
         text.addEventListener("touchstart", (e) => {
             isDragging = true;
             const touch = e.touches[0];
@@ -141,9 +151,7 @@
             text.style.top = (touch.clientY - offset.y) + "px";
         }, { passive: false });
 
-        document.addEventListener("touchend", () => {
-            isDragging = false;
-        });
+        document.addEventListener("touchend", () => isDragging = false);
     </script>
 
 </body>

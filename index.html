@@ -24,7 +24,7 @@
             color: #000000;
             height: 100vh;
             width: 100vw;
-            overflow: hidden; /* Prevents scrollbars if you drag off-screen */
+            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -38,18 +38,27 @@
             font-style: italic;
             letter-spacing: 0.1em;
             text-transform: lowercase;
+            position: absolute;
+            cursor: grab;
+            user-select: none;
             
-            /* Draggable Essentials */
-            position: absolute; /* Allows it to move freely */
-            cursor: grab;       /* Shows a hand icon when hovering */
-            user-select: none;  /* Prevents text from being highlighted while dragging */
+            /* Smooth color transition */
+            color: #000000;
+            transition: color 0.3s ease;
             
             opacity: 0;
             animation: fadeIn 2.5s ease-in forwards;
         }
 
-        h1:active {
-            cursor: grabbing;   /* Shows a closed hand when clicking */
+        /* Hover effect */
+        h1:hover {
+            color: #C65102;
+        }
+
+        /* Class to keep color orange while dragging */
+        h1.dragging {
+            color: #C65102 !important;
+            cursor: grabbing;
         }
 
         @keyframes fadeIn {
@@ -66,49 +75,47 @@
         let isDragging = false;
         let offset = { x: 0, y: 0 };
 
-        // Mouse Down (Start Dragging)
-        text.addEventListener("mousedown", (e) => {
+        // Start Dragging
+        const startDrag = (e) => {
             isDragging = true;
-            // Calculate where the mouse is relative to the text's top-left corner
-            offset.x = e.clientX - text.offsetLeft;
-            offset.y = e.clientY - text.offsetTop;
-        });
-
-        // Mouse Move (The Actual Drag)
-        document.addEventListener("mousemove", (e) => {
-            if (!isDragging) return;
+            text.classList.add('dragging'); // Turn it orange
             
-            // Move the text to follow the mouse
-            text.style.left = (e.clientX - offset.x) + "px";
-            text.style.top = (e.clientY - offset.y) + "px";
-            // Remove centering once dragged
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            
+            offset.x = clientX - text.offsetLeft;
+            offset.y = clientY - text.offsetTop;
+        };
+
+        // Moving
+        const doDrag = (e) => {
+            if (!isDragging) return;
+            e.preventDefault(); // Prevents screen scrolling on mobile
+            
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            
+            text.style.left = (clientX - offset.x) + "px";
+            text.style.top = (clientY - offset.y) + "px";
             text.style.margin = "0"; 
             text.style.transform = "none";
-        });
+        };
 
-        // Mouse Up (Stop Dragging)
-        document.addEventListener("mouseup", () => {
+        // Stop Dragging
+        const stopDrag = () => {
             isDragging = false;
-        });
+            text.classList.remove('dragging'); // Return to black (unless hovering)
+        };
 
-        // Touch Support (For Phones)
-        text.addEventListener("touchstart", (e) => {
-            isDragging = true;
-            let touch = e.touches[0];
-            offset.x = touch.clientX - text.offsetLeft;
-            offset.y = touch.clientY - text.offsetTop;
-        });
+        // Mouse Events
+        text.addEventListener("mousedown", startDrag);
+        document.addEventListener("mousemove", doDrag);
+        document.addEventListener("mouseup", stopDrag);
 
-        document.addEventListener("touchmove", (e) => {
-            if (!isDragging) return;
-            let touch = e.touches[0];
-            text.style.left = (touch.clientX - offset.x) + "px";
-            text.style.top = (touch.clientY - offset.y) + "px";
-        });
-
-        document.addEventListener("touchend", () => {
-            isDragging = false;
-        });
+        // Touch Events
+        text.addEventListener("touchstart", startDrag);
+        document.addEventListener("touchmove", doDrag, { passive: false });
+        document.addEventListener("touchend", stopDrag);
     </script>
 
 </body>

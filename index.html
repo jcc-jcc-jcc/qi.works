@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>qi.works</title>
     <style>
+        /* Registering the main brand font */
         @font-face {
             font-family: 'RadioGrotesk';
             src: url('PPRadioGrotesk-BoldItalic.woff') format('woff');
@@ -13,7 +14,7 @@
             font-display: swap;
         }
 
-        /* This hides the system cursor on everything, including links and text */
+        /* Hard hide the standard arrow cursor everywhere */
         * {
             margin: 0;
             padding: 0;
@@ -26,30 +27,37 @@
             height: 100vh;
             width: 100vw;
             overflow: hidden;
-            background-color: #ffffff;
+            font-family: 'RadioGrotesk', sans-serif;
+            -webkit-font-smoothing: antialiased;
         }
 
         body {
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'RadioGrotesk', sans-serif;
-            -webkit-font-smoothing: antialiased;
         }
 
-        /* The Custom Ball */
+        /* The Custom Text Cursor ("qi") */
         #custom-cursor {
-            width: 10px;
-            height: 10px;
-            background-color: #000000;
-            border-radius: 50%;
+            font-family: 'RadioGrotesk', sans-serif;
+            font-size: 10px;           /* The requested size */
+            font-weight: bold;
+            font-style: italic;
+            text-transform: lowercase;
+            color: #000000;           /* Default color is black */
+            
             position: fixed;
             top: 0;
             left: 0;
-            pointer-events: none; /* CRITICAL: Allows clicks to "pass through" the ball */
+            pointer-events: none;     /* CRITICAL: Clicks must pass through the text */
             z-index: 9999;
-            transform: translate(-50%, -50%);
-            transition: background-color 0.3s ease, transform 0.2s ease;
+            transform: translate(-50%, -50%); /* Centers the text on the mouse point */
+            
+            /* Smooth transitions for color and scale changes */
+            transition: color 0.3s ease, transform 0.2s ease, opacity 0.5s ease;
+            
+            /* Hide initially until mouse moves to prevent weird placement on load */
+            opacity: 0;
         }
 
         h1 {
@@ -66,14 +74,14 @@
             animation: fadeIn 2.5s ease-in forwards;
         }
 
-        /* Interaction states */
+        /* Interaction states for the main text */
         h1:hover { color: #C65102; }
         h1.dragging { color: #C65102 !important; }
 
-        /* Ball turns orange and grows slightly when hovering/dragging */
+        /* Styles applied to the "qi" cursor when hovering/dragging */
         body.active-cursor #custom-cursor {
-            background-color: #C65102;
-            transform: translate(-50%, -50%) scale(1.4);
+            color: #C65102;           /* Turns orange */
+            transform: translate(-50%, -50%) scale(1.3); /* Grows slightly */
         }
 
         @keyframes fadeIn {
@@ -83,7 +91,8 @@
 </head>
 <body>
 
-    <div id="custom-cursor"></div>
+    <div id="custom-cursor">qi</div>
+    
     <h1 id="drag-text">quiet intelligence</h1>
 
     <script>
@@ -91,9 +100,16 @@
         const cursor = document.getElementById("custom-cursor");
         let isDragging = false;
         let offset = { x: 0, y: 0 };
+        let mouseHasMoved = false;
 
-        // 1. Cursor Following
+        // 1. Cursor Following (Mouse)
         document.addEventListener("mousemove", (e) => {
+            // Reveal cursor on first move
+            if(!mouseHasMoved) {
+                cursor.style.opacity = "1";
+                mouseHasMoved = true;
+            }
+            
             cursor.style.left = e.clientX + "px";
             cursor.style.top = e.clientY + "px";
             
@@ -103,7 +119,7 @@
             }
         });
 
-        // 2. Hover Interactions
+        // 2. Hover Interactions (Color Changes)
         text.addEventListener("mouseenter", () => document.body.classList.add('active-cursor'));
         text.addEventListener("mouseleave", () => {
             if (!isDragging) document.body.classList.remove('active-cursor');
@@ -113,7 +129,7 @@
         text.addEventListener("mousedown", (e) => {
             isDragging = true;
             text.classList.add('dragging');
-            document.body.classList.add('active-cursor');
+            document.body.classList.add('active-cursor'); // Keep orange while dragging
             
             offset.x = e.clientX - text.offsetLeft;
             offset.y = e.clientY - text.offsetTop;
@@ -126,7 +142,7 @@
             isDragging = false;
             text.classList.remove('dragging');
             
-            // Check if we are still hovering after release
+            // Clean up interaction state unless still hovering
             const hoverElement = document.elementFromPoint(
                 parseInt(cursor.style.left), 
                 parseInt(cursor.style.top)
@@ -136,7 +152,7 @@
             }
         });
 
-        // 4. Basic Touch Support
+        // 4. Touch Support (The custom text cursor is usually irrelevant on mobile)
         text.addEventListener("touchstart", (e) => {
             isDragging = true;
             const touch = e.touches[0];

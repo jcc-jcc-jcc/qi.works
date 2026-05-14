@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>qi.works</title>
     <style>
+        /* 1. FONT REGISTRATION */
         @font-face {
             font-family: 'RadioGrotesk';
             src: url('PPRadioGrotesk-BoldItalic.woff') format('woff');
             font-weight: bold; font-style: italic; font-display: swap;
         }
 
-        /* 1. THE ORANGE CURSOR FIX */
-        /* We use an encoded SVG to create a 'normal' arrow in your hex color */
+        /* 2. THE ORANGE ARROW CURSOR */
+        /* This replaces the standard arrow with a burnt orange version */
         * {
             margin: 0; padding: 0; box-sizing: border-box;
             cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path fill='%23C65102' d='M0,0 l0,16 l4.5,-4.5 l3,6.5 l3,-1.5 l-3,-6.5 l6,0 z'/></svg>"), auto !important;
@@ -24,26 +25,28 @@
             overflow: hidden;
             font-family: 'RadioGrotesk', sans-serif;
             -webkit-font-smoothing: antialiased;
+            touch-action: none; /* Prevents the phone from trying to scroll the page */
         }
 
         body {
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* 2. THE TEXT */
+        /* 3. THE TEXT STYLE */
         h1 {
             font-size: 13px; font-weight: bold; font-style: italic;
             letter-spacing: 0.1em; text-transform: lowercase;
-            position: absolute; color: #000;
+            position: absolute; color: #000000;
             user-select: none;
+            transition: color 0.3s ease;
             opacity: 0;
             animation: fadeIn 2.5s ease-in forwards;
-            transition: color 0.3s;
         }
 
-        /* It turns orange only when you touch/drag it */
-        body.dragging-active h1 { color: #C65102; }
-        h1:hover { color: #C65102; }
+        /* Interaction color */
+        h1:hover, body.dragging-active h1 {
+            color: #C65102;
+        }
 
         @keyframes fadeIn { to { opacity: 1; } }
     </style>
@@ -53,33 +56,65 @@
     <h1 id="drag-text">quiet intelligence</h1>
 
     <script>
-        const el = document.getElementById("drag-text");
+        const text = document.getElementById("drag-text");
         let isDragging = false;
         let offset = { x: 0, y: 0 };
 
-        // HELPER: Get coordinates for both Mouse and Touch
-        const getCoord = (e) => ({
-            x: e.clientX || (e.touches && e.touches[0].clientX),
-            y: e.clientY || (e.touches && e.touches[0].clientY)
-        });
-
-        const start = (e) => {
+        // --- LAPTOP / MOUSE LOGIC ---
+        text.addEventListener("mousedown", (e) => {
             isDragging = true;
             document.body.classList.add('dragging-active');
-            const pos = getCoord(e);
-            offset.x = pos.x - el.offsetLeft;
-            offset.y = pos.y - el.offsetTop;
-            el.style.margin = "0"; el.style.transform = "none";
-        };
+            
+            // Calculate where you clicked relative to the text's corner
+            offset.x = e.clientX - text.offsetLeft;
+            offset.y = e.clientY - text.offsetTop;
+            
+            // Kill the initial flex centering so it can move freely
+            text.style.margin = "0";
+            text.style.transform = "none";
+        });
 
-        const move = (e) => {
+        document.addEventListener("mousemove", (e) => {
             if (!isDragging) return;
-            const pos = getCoord(e);
-            el.style.left = (pos.x - offset.x) + "px";
-            el.style.top = (pos.y - offset.y) + "px";
-        };
+            
+            text.style.left = (e.clientX - offset.x) + "px";
+            text.style.top = (e.clientY - offset.y) + "px";
+        });
 
-        const stop = () => {
+        document.addEventListener("mouseup", () => {
             isDragging = false;
             document.body.classList.remove('dragging-active');
-        };
+        });
+
+        // --- MOBILE / TOUCH LOGIC ---
+        text.addEventListener("touchstart", (e) => {
+            isDragging = true;
+            document.body.classList.add('dragging-active');
+            
+            const touch = e.touches[0];
+            offset.x = touch.clientX - text.offsetLeft;
+            offset.y = touch.clientY - text.offsetTop;
+            
+            text.style.margin = "0";
+            text.style.transform = "none";
+        });
+
+        document.addEventListener("touchmove", (e) => {
+            if (!isDragging) return;
+            
+            const touch = e.touches[0];
+            text.style.left = (touch.clientX - offset.x) + "px";
+            text.style.top = (touch.clientY - offset.y) + "px";
+            
+            // Prevents the browser from refreshing or scrolling while dragging
+            e.preventDefault(); 
+        }, { passive: false });
+
+        document.addEventListener("touchend", () => {
+            isDragging = false;
+            document.body.classList.remove('active-interaction');
+        });
+    </script>
+
+</body>
+</html>

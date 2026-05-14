@@ -17,6 +17,8 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            /* Hides the default system cursor everywhere on the page */
+            cursor: none !important; 
         }
 
         body {
@@ -32,6 +34,21 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        /* The Custom Ball Cursor */
+        #custom-cursor {
+            width: 10px;
+            height: 10px;
+            background-color: #000000;
+            border-radius: 50%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none; /* Allows clicks to pass through the ball to the text */
+            z-index: 9999;
+            transition: transform 0.1s ease, background-color 0.3s ease;
+            transform: translate(-50%, -50%); /* Centers the ball on the mouse tip */
+        }
+
         h1 {
             font-size: 13px;
             font-weight: bold;
@@ -39,26 +56,21 @@
             letter-spacing: 0.1em;
             text-transform: lowercase;
             position: absolute;
-            cursor: grab;
             user-select: none;
-            
-            /* Smooth color transition */
             color: #000000;
             transition: color 0.3s ease;
-            
             opacity: 0;
             animation: fadeIn 2.5s ease-in forwards;
         }
 
-        /* Hover effect */
-        h1:hover {
-            color: #C65102;
-        }
+        /* Hover & Dragging states */
+        h1:hover { color: #C65102; }
+        h1.dragging { color: #C65102 !important; }
 
-        /* Class to keep color orange while dragging */
-        h1.dragging {
-            color: #C65102 !important;
-            cursor: grabbing;
+        /* Make the ball turn orange when interacting */
+        body.active-cursor #custom-cursor {
+            background-color: #C65102;
+            transform: translate(-50%, -50%) scale(1.5); /* Makes the ball slightly larger */
         }
 
         @keyframes fadeIn {
@@ -68,54 +80,70 @@
 </head>
 <body>
 
+    <div id="custom-cursor"></div>
     <h1 id="drag-text">quiet intelligence</h1>
 
     <script>
         const text = document.getElementById("drag-text");
+        const cursor = document.getElementById("custom-cursor");
         let isDragging = false;
         let offset = { x: 0, y: 0 };
 
-        // Start Dragging
-        const startDrag = (e) => {
-            isDragging = true;
-            text.classList.add('dragging'); // Turn it orange
+        // 1. Follow Mouse Movement
+        document.addEventListener("mousemove", (e) => {
+            cursor.style.left = e.clientX + "px";
+            cursor.style.top = e.clientY + "px";
             
-            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-            
-            offset.x = clientX - text.offsetLeft;
-            offset.y = clientY - text.offsetTop;
-        };
+            if (isDragging) {
+                text.style.left = (e.clientX - offset.x) + "px";
+                text.style.top = (e.clientY - offset.y) + "px";
+            }
+        });
 
-        // Moving
-        const doDrag = (e) => {
-            if (!isDragging) return;
-            e.preventDefault(); // Prevents screen scrolling on mobile
+        // 2. Interaction (Colors & Scaling)
+        text.addEventListener("mouseenter", () => document.body.classList.add('active-cursor'));
+        text.addEventListener("mouseleave", () => {
+            if (!isDragging) document.body.classList.remove('active-cursor');
+        });
+
+        // 3. Dragging Logic
+        text.addEventListener("mousedown", (e) => {
+            isDragging = true;
+            text.classList.add('dragging');
+            document.body.classList.add('active-cursor');
             
-            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            offset.x = e.clientX - text.offsetLeft;
+            offset.y = e.clientY - text.offsetTop;
             
-            text.style.left = (clientX - offset.x) + "px";
-            text.style.top = (clientY - offset.y) + "px";
+            // Remove initial centering
             text.style.margin = "0"; 
             text.style.transform = "none";
-        };
+        });
 
-        // Stop Dragging
-        const stopDrag = () => {
+        document.addEventListener("mouseup", () => {
             isDragging = false;
-            text.classList.remove('dragging'); // Return to black (unless hovering)
-        };
+            text.classList.remove('dragging');
+            document.body.classList.remove('active-cursor');
+        });
 
-        // Mouse Events
-        text.addEventListener("mousedown", startDrag);
-        document.addEventListener("mousemove", doDrag);
-        document.addEventListener("mouseup", stopDrag);
+        // 4. Mobile/Touch Support (Cursor is hidden on touch devices usually)
+        text.addEventListener("touchstart", (e) => {
+            isDragging = true;
+            const touch = e.touches[0];
+            offset.x = touch.clientX - text.offsetLeft;
+            offset.y = touch.clientY - text.offsetTop;
+        });
 
-        // Touch Events
-        text.addEventListener("touchstart", startDrag);
-        document.addEventListener("touchmove", doDrag, { passive: false });
-        document.addEventListener("touchend", stopDrag);
+        document.addEventListener("touchmove", (e) => {
+            if (!isDragging) return;
+            const touch = e.touches[0];
+            text.style.left = (touch.clientX - offset.x) + "px";
+            text.style.top = (touch.clientY - offset.y) + "px";
+        }, { passive: false });
+
+        document.addEventListener("touchend", () => {
+            isDragging = false;
+        });
     </script>
 
 </body>

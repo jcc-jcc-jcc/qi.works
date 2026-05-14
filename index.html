@@ -5,169 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>qi.works</title>
     <style>
-        /* 1. FONT REGISTRATION */
         @font-face {
-            font-family: 'RadioGrotesk';
+            font-family: 'qi-font';
             src: url('PPRadioGrotesk-BoldItalic.woff') format('woff');
-            font-weight: bold;
-            font-style: italic;
-            font-display: swap;
+            font-weight: bold; font-style: italic; font-display: swap;
         }
 
-        /* 2. GLOBAL RESET & TOTAL CURSOR HIDE */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            /* This is now global to ensure the arrow is GONE on your laptop */
+        /* Nuclear Hide + Reset */
+        *, html, body { 
+            margin: 0; padding: 0; box-sizing: border-box; 
             cursor: none !important; 
         }
 
-        html, body {
-            background-color: #ffffff;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-            font-family: 'RadioGrotesk', sans-serif;
-            -webkit-font-smoothing: antialiased;
-        }
-
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background: #fff; color: #000;
+            height: 100vh; width: 100vw; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            font-family: 'qi-font', sans-serif; -webkit-font-smoothing: antialiased;
         }
 
-        /* 3. THE CUSTOM CURSOR (FRAME) */
-        #custom-cursor {
-            /* Hidden by default (for mobile/tablet) */
-            display: none; 
-            
-            width: 14px;
-            height: 14px;
-            border: 1px solid #000000;
-            background-color: transparent;
-            position: fixed;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 9999;
+        /* Italic Frame Cursor */
+        #cursor {
+            position: fixed; z-index: 9999; pointer-events: none;
+            width: 14px; height: 14px; border: 1px solid #000;
             transform: translate(-50%, -50%) skewX(-15deg);
-            transition: border-color 0.3s ease, transform 0.2s ease, opacity 0.5s ease;
-            opacity: 0;
+            transition: border-color .3s, transform .2s, opacity .5s;
+            opacity: 0; display: none;
         }
 
-        /* ONLY show the custom frame on devices with a mouse/trackpad */
-        @media (pointer: fine) {
-            #custom-cursor {
-                display: block;
-            }
-        }
+        @media (hover: hover) { #cursor { display: block; } }
 
-        /* 4. THE MAIN TEXT */
         h1 {
-            font-size: 13px;
-            font-weight: bold;
-            font-style: italic;
-            letter-spacing: 0.1em;
-            text-transform: lowercase;
-            position: absolute;
-            user-select: none;
-            color: #000000;
-            transition: color 0.3s ease;
-            opacity: 0;
-            animation: fadeIn 2.5s ease-in forwards;
+            font-size: 13px; font-weight: bold; font-style: italic;
+            letter-spacing: 0.1em; text-transform: lowercase;
+            position: absolute; user-select: none;
+            opacity: 0; animation: fade 2.5s ease forwards;
+            transition: color .3s;
         }
 
-        /* 5. INTERACTION STATES */
-        body.active-interaction h1 {
-            color: #C65102;
-        }
+        /* Interaction States */
+        body.active h1 { color: #C65102; }
+        body.active #cursor { border-color: #C65102; transform: translate(-50%, -50%) skewX(-15deg) scale(1.5); }
 
-        body.active-interaction #custom-cursor {
-            border-color: #C65102;
-            transform: translate(-50%, -50%) skewX(-15deg) scale(1.5);
-        }
-
-        @keyframes fadeIn {
-            to { opacity: 1; }
-        }
+        @keyframes fade { to { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div id="custom-cursor"></div>
-    <h1 id="drag-text">quiet intelligence</h1>
+    <div id="cursor"></div>
+    <h1 id="drag">quiet intelligence</h1>
 
     <script>
-        const text = document.getElementById("drag-text");
-        const cursor = document.getElementById("custom-cursor");
-        let isDragging = false;
-        let offset = { x: 0, y: 0 };
-        let hasMoved = false;
+        const el = document.getElementById("drag"), cur = document.getElementById("cursor"), body = document.body;
+        let dragging = false, offset = { x: 0, y: 0 };
 
-        // --- CURSOR & TEXT MOVEMENT ---
-        document.addEventListener("mousemove", (e) => {
-            if(!hasMoved) {
-                cursor.style.opacity = "1";
-                hasMoved = true;
-            }
-            
-            cursor.style.left = e.clientX + "px";
-            cursor.style.top = e.clientY + "px";
-            
-            if (isDragging) {
-                text.style.left = (e.clientX - offset.x) + "px";
-                text.style.top = (e.clientY - offset.y) + "px";
-            }
-        });
+        const getPos = (e) => ({ x: e.clientX || e.touches[0].clientX, y: e.clientY || e.touches[0].clientY });
 
-        // --- INTERACTION COLOR TOGGLES ---
-        text.addEventListener("mouseenter", () => document.body.classList.add('active-interaction'));
-        text.addEventListener("mouseleave", () => {
-            if (!isDragging) document.body.classList.remove('active-interaction');
-        });
+        const start = (e) => {
+            dragging = true; body.classList.add('active');
+            const p = getPos(e);
+            offset = { x: p.x - el.offsetLeft, y: p.y - el.offsetTop };
+            el.style.margin = "0"; el.style.transform = "none";
+        };
 
-        text.addEventListener("mousedown", (e) => {
-            isDragging = true;
-            document.body.classList.add('active-interaction');
-            offset.x = e.clientX - text.offsetLeft;
-            offset.y = e.clientY - text.offsetTop;
-            text.style.margin = "0"; 
-            text.style.transform = "none";
-        });
+        const move = (e) => {
+            const p = getPos(e);
+            cur.style.opacity = "1";
+            cur.style.left = `${p.x}px`; cur.style.top = `${p.y}px`;
+            if (dragging) { el.style.left = `${p.x - offset.x}px`; el.style.top = `${p.y - offset.y}px`; }
+        };
 
-        document.addEventListener("mouseup", (e) => {
-            isDragging = false;
-            const elementUnder = document.elementFromPoint(e.clientX, e.clientY);
-            if (elementUnder !== text) {
-                document.body.classList.remove('active-interaction');
-            }
-        });
+        const end = (e) => {
+            dragging = false;
+            const p = e.changedTouches ? e.changedTouches[0] : e;
+            if (document.elementFromPoint(p.clientX, p.clientY) !== el) body.classList.remove('active');
+        };
 
-        // --- TOUCH LOGIC (Drag only, no custom cursor) ---
-        text.addEventListener("touchstart", (e) => {
-            isDragging = true;
-            const touch = e.touches[0];
-            offset.x = touch.clientX - text.offsetLeft;
-            offset.y = touch.clientY - text.offsetTop;
-            document.body.classList.add('active-interaction');
-        });
+        // Desktop Events
+        document.addEventListener("mousemove", move);
+        el.addEventListener("mousedown", start);
+        document.addEventListener("mouseup", end);
+        el.addEventListener("mouseenter", () => body.classList.add('active'));
+        el.addEventListener("mouseleave", () => !dragging && body.classList.remove('active'));
 
-        document.addEventListener("touchmove", (e) => {
-            if (!isDragging) return;
-            const touch = e.touches[0];
-            text.style.left = (touch.clientX - offset.x) + "px";
-            text.style.top = (touch.clientY - offset.y) + "px";
-            text.style.margin = "0"; 
-            text.style.transform = "none";
-        }, { passive: false });
-
-        document.addEventListener("touchend", () => {
-            isDragging = false;
-            document.body.classList.remove('active-interaction');
-        });
+        // Mobile Events
+        el.addEventListener("touchstart", start);
+        document.addEventListener("touchmove", (e) => { if(dragging) { e.preventDefault(); move(e); } }, { passive: false });
+        document.addEventListener("touchend", end);
     </script>
-
 </body>
 </html>

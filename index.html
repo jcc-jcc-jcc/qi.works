@@ -14,11 +14,13 @@
             font-display: swap;
         }
 
-        /* 2. BASE STYLES */
+        /* 2. GLOBAL RESET & TOTAL CURSOR HIDE */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            /* This is now global to ensure the arrow is GONE on your laptop */
+            cursor: none !important; 
         }
 
         html, body {
@@ -36,43 +38,33 @@
             align-items: center;
         }
 
-        /* 3. DESKTOP ONLY: CUSTOM CURSOR & HIDE SYSTEM ARROW */
-        /* This block only runs if a mouse/trackpad is detected */
+        /* 3. THE CUSTOM CURSOR (FRAME) */
+        #custom-cursor {
+            /* Hidden by default (for mobile/tablet) */
+            display: none; 
+            
+            width: 14px;
+            height: 14px;
+            border: 1px solid #000000;
+            background-color: transparent;
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%) skewX(-15deg);
+            transition: border-color 0.3s ease, transform 0.2s ease, opacity 0.5s ease;
+            opacity: 0;
+        }
+
+        /* ONLY show the custom frame on devices with a mouse/trackpad */
         @media (pointer: fine) {
-            * {
-                cursor: none !important; 
-            }
-
             #custom-cursor {
-                display: block; /* Show the frame on desktop */
-                width: 14px;
-                height: 14px;
-                border: 1px solid #000000;
-                background-color: transparent;
-                position: fixed;
-                top: 0;
-                left: 0;
-                pointer-events: none;
-                z-index: 9999;
-                transform: translate(-50%, -50%) skewX(-15deg);
-                transition: border-color 0.3s ease, transform 0.2s ease, opacity 0.5s ease;
-                opacity: 0;
-            }
-
-            body.active-interaction #custom-cursor {
-                border-color: #C65102;
-                transform: translate(-50%, -50%) skewX(-15deg) scale(1.5);
+                display: block;
             }
         }
 
-        /* 4. MOBILE/TABLET ONLY: HIDE THE CUSTOM CURSOR */
-        @media (pointer: coarse) {
-            #custom-cursor {
-                display: none !important;
-            }
-        }
-
-        /* 5. THE MAIN TEXT */
+        /* 4. THE MAIN TEXT */
         h1 {
             font-size: 13px;
             font-weight: bold;
@@ -87,9 +79,14 @@
             animation: fadeIn 2.5s ease-in forwards;
         }
 
-        /* Color change on hover/interaction */
+        /* 5. INTERACTION STATES */
         body.active-interaction h1 {
             color: #C65102;
+        }
+
+        body.active-interaction #custom-cursor {
+            border-color: #C65102;
+            transform: translate(-50%, -50%) skewX(-15deg) scale(1.5);
         }
 
         @keyframes fadeIn {
@@ -109,7 +106,7 @@
         let offset = { x: 0, y: 0 };
         let hasMoved = false;
 
-        // --- MOUSE LOGIC ---
+        // --- CURSOR & TEXT MOVEMENT ---
         document.addEventListener("mousemove", (e) => {
             if(!hasMoved) {
                 cursor.style.opacity = "1";
@@ -125,6 +122,7 @@
             }
         });
 
+        // --- INTERACTION COLOR TOGGLES ---
         text.addEventListener("mouseenter", () => document.body.classList.add('active-interaction'));
         text.addEventListener("mouseleave", () => {
             if (!isDragging) document.body.classList.remove('active-interaction');
@@ -133,43 +131,4 @@
         text.addEventListener("mousedown", (e) => {
             isDragging = true;
             document.body.classList.add('active-interaction');
-            offset.x = e.clientX - text.offsetLeft;
-            offset.y = e.clientY - text.offsetTop;
-            text.style.margin = "0"; 
-            text.style.transform = "none";
-        });
-
-        document.addEventListener("mouseup", (e) => {
-            isDragging = false;
-            const elementUnder = document.elementFromPoint(e.clientX, e.clientY);
-            if (elementUnder !== text) {
-                document.body.classList.remove('active-interaction');
-            }
-        });
-
-        // --- TOUCH LOGIC (Stays active for dragging functionality) ---
-        text.addEventListener("touchstart", (e) => {
-            isDragging = true;
-            const touch = e.touches[0];
-            offset.x = touch.clientX - text.offsetLeft;
-            offset.y = touch.clientY - text.offsetTop;
-            document.body.classList.add('active-interaction');
-        });
-
-        document.addEventListener("touchmove", (e) => {
-            if (!isDragging) return;
-            const touch = e.touches[0];
-            text.style.left = (touch.clientX - offset.x) + "px";
-            text.style.top = (touch.clientY - offset.y) + "px";
-            text.style.margin = "0"; 
-            text.style.transform = "none";
-        }, { passive: false });
-
-        document.addEventListener("touchend", () => {
-            isDragging = false;
-            document.body.classList.remove('active-interaction');
-        });
-    </script>
-
-</body>
-</html>
+            offset.x = e.clientX

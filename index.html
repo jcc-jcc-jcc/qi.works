@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>qi.works</title>
     <style>
-        /* 1. Font Registration */
         @font-face {
             font-family: 'RadioGrotesk';
             src: url('PPRadioGrotesk-BoldItalic.woff') format('woff');
@@ -14,7 +13,6 @@
             font-display: swap;
         }
 
-        /* 2. Layout */
         * {
             margin: 0;
             padding: 0;
@@ -24,26 +22,34 @@
         body {
             background-color: #ffffff;
             color: #000000;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; /* Prevents scrollbars if you drag off-screen */
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
             font-family: 'RadioGrotesk', sans-serif;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* 3. The Refined Text */
         h1 {
-            font-size: 13px;           /* Updated size */
+            font-size: 13px;
             font-weight: bold;
             font-style: italic;
-            letter-spacing: 0.1em;     /* Slightly tighter for 13px */
-            text-transform: lowercase; 
+            letter-spacing: 0.1em;
+            text-transform: lowercase;
             
-            /* Clean fade-in */
+            /* Draggable Essentials */
+            position: absolute; /* Allows it to move freely */
+            cursor: grab;       /* Shows a hand icon when hovering */
+            user-select: none;  /* Prevents text from being highlighted while dragging */
+            
             opacity: 0;
             animation: fadeIn 2.5s ease-in forwards;
+        }
+
+        h1:active {
+            cursor: grabbing;   /* Shows a closed hand when clicking */
         }
 
         @keyframes fadeIn {
@@ -53,7 +59,57 @@
 </head>
 <body>
 
-    <h1>quiet intelligence</h1>
+    <h1 id="drag-text">quiet intelligence</h1>
+
+    <script>
+        const text = document.getElementById("drag-text");
+        let isDragging = false;
+        let offset = { x: 0, y: 0 };
+
+        // Mouse Down (Start Dragging)
+        text.addEventListener("mousedown", (e) => {
+            isDragging = true;
+            // Calculate where the mouse is relative to the text's top-left corner
+            offset.x = e.clientX - text.offsetLeft;
+            offset.y = e.clientY - text.offsetTop;
+        });
+
+        // Mouse Move (The Actual Drag)
+        document.addEventListener("mousemove", (e) => {
+            if (!isDragging) return;
+            
+            // Move the text to follow the mouse
+            text.style.left = (e.clientX - offset.x) + "px";
+            text.style.top = (e.clientY - offset.y) + "px";
+            // Remove centering once dragged
+            text.style.margin = "0"; 
+            text.style.transform = "none";
+        });
+
+        // Mouse Up (Stop Dragging)
+        document.addEventListener("mouseup", () => {
+            isDragging = false;
+        });
+
+        // Touch Support (For Phones)
+        text.addEventListener("touchstart", (e) => {
+            isDragging = true;
+            let touch = e.touches[0];
+            offset.x = touch.clientX - text.offsetLeft;
+            offset.y = touch.clientY - text.offsetTop;
+        });
+
+        document.addEventListener("touchmove", (e) => {
+            if (!isDragging) return;
+            let touch = e.touches[0];
+            text.style.left = (touch.clientX - offset.x) + "px";
+            text.style.top = (touch.clientY - offset.y) + "px";
+        });
+
+        document.addEventListener("touchend", () => {
+            isDragging = false;
+        });
+    </script>
 
 </body>
 </html>

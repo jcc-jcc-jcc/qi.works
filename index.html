@@ -5,18 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>qi.works</title>
     <style>
-        /* 1. FONT REGISTRATION */
         @font-face {
             font-family: 'RadioGrotesk';
-            src: url('PPRadioGrotesk-BoldInter.woff') format('woff'); /* Verify your filename extension! */
+            src: url('PPRadioGrotesk-BoldItalic.woff') format('woff');
             font-weight: bold; font-style: italic; font-display: swap;
         }
 
-        /* 2. THE FIX: TOTAL HIDE */
+        /* 1. THE ORANGE CURSOR FIX */
+        /* We use an encoded SVG to create a 'normal' arrow in your hex color */
         * {
             margin: 0; padding: 0; box-sizing: border-box;
-            /* This worked before, so we are sticking to it exactly */
-            cursor: none !important; 
+            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path fill='%23C65102' d='M0,0 l0,16 l4.5,-4.5 l3,6.5 l3,-1.5 l-3,-6.5 l6,0 z'/></svg>"), auto !important;
         }
 
         html, body {
@@ -25,112 +24,62 @@
             overflow: hidden;
             font-family: 'RadioGrotesk', sans-serif;
             -webkit-font-smoothing: antialiased;
-            /* Extra layer of protection */
-            user-select: none; 
         }
 
         body {
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* 3. THE FRAME CURSOR */
-        #custom-cursor {
-            width: 14px; height: 14px;
-            border: 1px solid #000;
-            background: transparent;
-            position: fixed; top: 0; left: 0;
-            pointer-events: none; z-index: 9999;
-            transform: translate(-50%, -50%) skewX(-15deg);
-            transition: border-color 0.3s, transform 0.2s, opacity 0.5s;
-            opacity: 0; /* Hidden until first movement */
-        }
-
-        /* 4. THE MAIN TEXT */
+        /* 2. THE TEXT */
         h1 {
             font-size: 13px; font-weight: bold; font-style: italic;
             letter-spacing: 0.1em; text-transform: lowercase;
             position: absolute; color: #000;
-            transition: color 0.3s;
+            user-select: none;
             opacity: 0;
             animation: fadeIn 2.5s ease-in forwards;
+            transition: color 0.3s;
         }
 
-        /* INTERACTION STATES */
-        body.active-cursor h1 { color: #C65102; }
-        body.active-cursor #custom-cursor {
-            border-color: #C65102;
-            transform: translate(-50%, -50%) skewX(-15deg) scale(1.5);
-        }
+        /* It turns orange only when you touch/drag it */
+        body.dragging-active h1 { color: #C65102; }
+        h1:hover { color: #C65102; }
 
         @keyframes fadeIn { to { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div id="custom-cursor"></div>
     <h1 id="drag-text">quiet intelligence</h1>
 
     <script>
-        const text = document.getElementById("drag-text");
-        const cursor = document.getElementById("custom-cursor");
-        let isDragging = false, hasMoved = false;
+        const el = document.getElementById("drag-text");
+        let isDragging = false;
         let offset = { x: 0, y: 0 };
 
-        // SHARED MOVE LOGIC
-        const updatePosition = (clientX, clientY) => {
-            if(!hasMoved) { cursor.style.opacity = "1"; hasMoved = true; }
-            
-            cursor.style.left = clientX + "px";
-            cursor.style.top = clientY + "px";
-            
-            if (isDragging) {
-                text.style.left = (clientX - offset.x) + "px";
-                text.style.top = (clientY - offset.y) + "px";
-            }
+        // HELPER: Get coordinates for both Mouse and Touch
+        const getCoord = (e) => ({
+            x: e.clientX || (e.touches && e.touches[0].clientX),
+            y: e.clientY || (e.touches && e.touches[0].clientY)
+        });
+
+        const start = (e) => {
+            isDragging = true;
+            document.body.classList.add('dragging-active');
+            const pos = getCoord(e);
+            offset.x = pos.x - el.offsetLeft;
+            offset.y = pos.y - el.offsetTop;
+            el.style.margin = "0"; el.style.transform = "none";
         };
 
-        // MOUSE EVENTS
-        document.addEventListener("mousemove", (e) => updatePosition(e.clientX, e.clientY));
-
-        text.addEventListener("mouseenter", () => document.body.classList.add('active-cursor'));
-        text.addEventListener("mouseleave", () => {
-            if (!isDragging) document.body.classList.remove('active-cursor');
-        });
-
-        text.addEventListener("mousedown", (e) => {
-            isDragging = true;
-            document.body.classList.add('active-cursor');
-            offset.x = e.clientX - text.offsetLeft;
-            offset.y = e.clientY - text.offsetTop;
-            text.style.margin = "0"; text.style.transform = "none";
-        });
-
-        document.addEventListener("mouseup", (e) => {
-            isDragging = false;
-            const el = document.elementFromPoint(e.clientX, e.clientY);
-            if (el !== text) document.body.classList.remove('active-cursor');
-        });
-
-        // TOUCH EVENTS (DRAG ONLY)
-        text.addEventListener("touchstart", (e) => {
-            isDragging = true;
-            const t = e.touches[0];
-            offset.x = t.clientX - text.offsetLeft;
-            offset.y = t.clientY - text.offsetTop;
-            document.body.classList.add('active-cursor');
-        });
-
-        document.addEventListener("touchmove", (e) => {
+        const move = (e) => {
             if (!isDragging) return;
-            const t = e.touches[0];
-            updatePosition(t.clientX, t.clientY);
-            text.style.margin = "0"; text.style.transform = "none";
-        }, { passive: false });
+            const pos = getCoord(e);
+            el.style.left = (pos.x - offset.x) + "px";
+            el.style.top = (pos.y - offset.y) + "px";
+        };
 
-        document.addEventListener("touchend", () => {
+        const stop = () => {
             isDragging = false;
-            document.body.classList.remove('active-cursor');
-        });
-    </script>
-</body>
-</html>
+            document.body.classList.remove('dragging-active');
+        };
